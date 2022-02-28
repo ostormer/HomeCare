@@ -9,6 +9,7 @@ public class SolutionVerifier {
 	    Solution randomSolution = new Solution(problem);
 	    randomSolution.generateRandomUnfeasible();
 	    System.out.println(randomSolution.toStringRepresentation());
+	    System.out.println(randomSolution.computeUnfeasibleUtility());
 	}
 
 }

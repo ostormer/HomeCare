@@ -68,7 +68,8 @@ public class Solution {
             travelTimeTotal += this.problem.getTravelTimes()[currentLocation][0];
             currentTime += this.problem.getTravelTimes()[currentLocation][0];
             if (usedCapacity > this.problem.getCapacityNurse()) {
-                
+                System.out.println("Nurse over capacity");
+                // Add some extra punishment?
             }
         }
         return travelTimeTotal + (double) delayTotal * DELAY_FACTOR;
