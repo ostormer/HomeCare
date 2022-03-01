@@ -14,6 +14,9 @@ public class Problem {
 	private int nbrNurses;
 	private int capacityNurse;
 	private double benchmark;
+	private int xCoordDepot;
+	private int yCoordDepot;
+	private int returnTime;
 	private Patient[] patients;
 	// private ArrayList<ArrayList<Double>> travelTimes;
 	private Double[][] travelTimes;
@@ -34,6 +37,15 @@ public class Problem {
 		    Double capacityNurseRead = (Double) map.get("capacity_nurse");
 		    this.capacityNurse = capacityNurseRead.intValue();
 		    this.benchmark = (double) map.get("benchmark");
+		    // Read depot data
+		    Map<String, Double> depotMap = (Map<String, Double>) map.get("depot");
+		    Double xCoordDepot = (Double) depotMap.get("x_coord");
+		    this.xCoordDepot = xCoordDepot.intValue();
+		    Double yCoordDepot = (Double) depotMap.get("y_coord");
+            this.yCoordDepot = yCoordDepot.intValue();
+            Double returnTime = (Double) depotMap.get("return_time");
+            this.returnTime = returnTime.intValue();
+            
 		    // Read patient info
 		    Map<String, Map<String, Double>> patientMaps = (Map<String, Map<String, Double>>) map.get("patients");
 		    this.patients = new Patient[patientMaps.size()];
@@ -72,26 +84,31 @@ public class Problem {
 		    ex.printStackTrace();
 		}
 	}
+
 	public String getInstanceName() {
         return instanceName;
     }
-
     public int getNbrNurses() {
         return nbrNurses;
     }
-
     public int getCapacityNurse() {
         return capacityNurse;
     }
-
     public double getBenchmark() {
         return benchmark;
     }
-
     public Patient[] getPatients() {
         return patients;
     }
-
+    public int getxCoordDepot() {
+        return xCoordDepot;
+    }
+    public int getyCoordDepot() {
+        return yCoordDepot;
+    }
+    public int getReturnTime() {
+        return returnTime;
+    }
     public Double[][] getTravelTimes() {
         return travelTimes;
     }
