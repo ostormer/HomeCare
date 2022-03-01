@@ -1,11 +1,12 @@
 package genetic_alg;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 public class Solution {
     private Problem problem;
-    private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution
+    private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
     private static double DELAY_FACTOR = 100.;
     private static double OVER_CAPACITY_PUNISHMENT = 1000.;
 
@@ -15,8 +16,9 @@ public class Solution {
     
     public void generateRandomUnfeasible() {
         Random rand = new Random();
+        // Create empty ArrayList of plans.
         this.nursePlans = new ArrayList<ArrayList<Patient>>();
-        for (int i = 0; i < this.problem.getNbrNurses(); i++) { // Wow i miss python
+        for (int i = 0; i < this.problem.getNbrNurses(); i++) {
             this.nursePlans.add(new ArrayList<Patient>());
         }
         for (Patient patient : this.problem.getPatients()) {
@@ -26,8 +28,19 @@ public class Solution {
     }
     
     public void generateRandomSorted() {
+        // This generator does not care about travel times in any way,
+        // but focuses on minimizing delays in the randomly generated plan.
         this.generateRandomUnfeasible();
-        // TODO Sort each of the nurse's plans after each patient's latest possible start time
+        // Sort each of the nurse's plans after each patient's latest possible start time
+        for (int i = 0; i < this.problem.getNbrNurses(); i++) {
+            Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
+        }
+    }
+    
+    public Solution[] crossoverGreedyInsertion(Solution other) {
+        Solution[] offspring = new Solution[2];
+        // TODO: Crossover as described at end of Visma lecture notes
+        return offspring;
     }
     
     public String toStringRepresentation() {
@@ -146,6 +159,8 @@ public class Solution {
                 delayTotal += currentTime - this.problem.getReturnTime();
             }
         }
+        System.out.println("Total delay:"); // TODO: Remove print
+        System.out.println(delayTotal); // TODO: Remove print
         return travelTimeTotal + (double) delayTotal * DELAY_FACTOR;
     }
 }

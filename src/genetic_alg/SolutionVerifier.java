@@ -10,6 +10,11 @@ public class SolutionVerifier {
 	    randomSolution.generateRandomUnfeasible();
 	    System.out.println(randomSolution.toStringRepresentation());
 	    System.out.println(randomSolution.computeUnfeasibleUtility());
+	    
+	    Solution sortedSolution = new Solution(problem);
+	    sortedSolution.generateRandomSorted();
+        System.out.println(sortedSolution.toStringRepresentation());
+        System.out.println(sortedSolution.computeUnfeasibleUtility());
 	}
 
 }

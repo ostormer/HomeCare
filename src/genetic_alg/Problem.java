@@ -21,6 +21,7 @@ public class Problem {
 	// private ArrayList<ArrayList<Double>> travelTimes;
 	private Double[][] travelTimes;
 	
+	@SuppressWarnings("unchecked")
 	public Problem(String path) {
 	    System.out.println("Print this");
 		try {
@@ -70,7 +71,7 @@ public class Problem {
 		        this.patients[Integer.parseInt(patientEntry.getKey()) - 1] = patient;
 		    }
 		    // Read travel times matrix
-		    ArrayList<ArrayList<Double>> travelTimesArrayList = (ArrayList<ArrayList<Double>>) map.get("travel_times");
+            ArrayList<ArrayList<Double>> travelTimesArrayList = (ArrayList<ArrayList<Double>>) map.get("travel_times");
 		    // Convert from ArrayList to Array for faster lookup
 		    this.travelTimes = new Double[travelTimesArrayList.size()][];
 		    for (int i = 0; i < travelTimesArrayList.size(); i++) {
