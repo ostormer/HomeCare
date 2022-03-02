@@ -37,22 +37,54 @@ public class Solution {
         }
     }
     
+    public void insertInBestRoute(Patient patient) {
+        // Assumes patient is not in any route and needs to be inserted
+        int closestNeighbor = -1;
+        double minDist = Double.MAX_VALUE;
+        for (int i=0; i<this.problem.getPatients().length+1; i++) {
+            if (this.problem.getTravelTimes()[patient.getId()][i] < minDist) {
+                if (i == patient.getId()) {
+                    continue;
+                } // else:
+                minDist = this.problem.getTravelTimes()[patient.getId()][i];
+                closestNeighbor = i;
+            }
+        }
+        
+    }
+    
     public Solution[] crossoverGreedyInsertion(Solution other) {
         Solution[] offspring = new Solution[2];
         // TODO: Crossover as described at end of Visma lecture notes
+        
         return offspring;
     }
     
+    public void mutateSwapOnePatient() { // Dumb mutation
+        // TODO: Write more mutations, ones that greedily improve solution in random ways
+        Random rand = new Random();
+        int from = rand.nextInt(this.problem.getNbrNurses());
+        while (this.nursePlans.get(from).size() == 0) { // Select again if plan of nurse is empty
+            from = rand.nextInt(this.problem.getNbrNurses());
+        }
+        int to = rand.nextInt(this.problem.getNbrNurses());
+        int patientFromIndex = rand.nextInt(this.nursePlans.get(from).size());
+        int patientToIndex = rand.nextInt(this.nursePlans.get(to).size());
+        Patient movePatient = this.nursePlans.get(from).remove(patientFromIndex);
+        this.nursePlans.get(to).add(patientToIndex, movePatient);
+        
+    }
+    
     public String toStringRepresentation() {
-        String out = "";
+        String out = "[\n";
         for (ArrayList<Patient> nursePlan : this.nursePlans) {
             out += "[ ";
             for (Patient patient : nursePlan) {
-                out += String.valueOf(patient.getId()) + " ";
+                out += String.valueOf(patient.getId()) + ", ";
             }
             out += "]\n";
         }
-        return out;
+        return out + "]";
     }
     
     public boolean isFeasible() {
