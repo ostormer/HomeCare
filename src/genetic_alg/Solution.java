@@ -36,20 +36,114 @@ public class Solution {
             Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
         }
     }
-    
+    /**
+     * Insert patient into route where it increases travel time the least.
+     * Does not take possible care time window into account
+     * @param patient: Patient to insert. Assumes patient is not in any route
+     */
     public void insertInBestRoute(Patient patient) {
+        double minIncrease = Double.MAX_VALUE;
+        int nurseIndexInsert = -1;
+        int stopIndexInsert = -1;
+        // Search for smallest increase
+        for (int nurseIndex=0; nurseIndex<nursePlans.size(); nurseIndex++) {
+            // For each nurse's plan
+            // If plan empty
+            if (nursePlans.get(nurseIndex).size() == 0) {
+                double increase = this.problem.getTravelTimes()[0][patient.getId()] + 
+                        this.problem.getTravelTimes()[patient.getId()][0];
+                
+                if (increase < minIncrease) { // Compare increase
+                    minIncrease = increase;
+                    nurseIndexInsert = nurseIndex;
+                    stopIndexInsert = 0;
+                }
+            }
+            // Plan not empty
+            else {
+                // First check adding it at start of route
+                double increase = this.problem.getTravelTimes()[0][patient.getId()]
+                                + this.problem.getTravelTimes()[patient.getId()][nursePlans.get(nurseIndex).get(0).getId()]
+                                - this.problem.getTravelTimes()[0][nursePlans.get(nurseIndex).get(0).getId()];
+                
+                if (increase < minIncrease) { // Compare increase
+                    minIncrease = increase;
+                    nurseIndexInsert = nurseIndex;
+                    stopIndexInsert = 0;
+                }
+                for (int stopIndex=0; stopIndex<nursePlans.get(nurseIndex).size()-1; stopIndex++) {
+                    // Calculate of travel time by adding patient after stopIndex
+                    int idBefore = nursePlans.get(nurseIndex).get(stopIndex).getId();
+                    int idAfter = nursePlans.get(nurseIndex).get(stopIndex + 1).getId();
+                    increase = this.problem.getTravelTimes()[idBefore][patient.getId()]
+                             + this.problem.getTravelTimes()[patient.getId()][idAfter]
+                             - this.problem.getTravelTimes()[idBefore][idAfter];
+                    
+                    if (increase < minIncrease) { // Compare increase
+                        minIncrease = increase;
+                        nurseIndexInsert = nurseIndex;
+                        stopIndexInsert = stopIndex + 1;
+                    }
+                }
+                // Check adding it at end of route
+                increase = this.problem.getTravelTimes()[nursePlans.get(nurseIndex).get(nursePlans.get(nurseIndex).size()-1).getId()][patient.getId()]
+                         + this.problem.getTravelTimes()[patient.getId()][0]
+                         - this.problem.getTravelTimes()[nursePlans.get(nurseIndex).get(nursePlans.get(nurseIndex).size()-1).getId()][0];
+                
+                if (increase < minIncrease) { // Compare increase
+                    minIncrease = increase;
+                    nurseIndexInsert = nurseIndex;
+                    stopIndexInsert = nursePlans.get(nurseIndex).size();
+                }
+            } // End if plan not empty
+        } // End for each nursePlan
+        // Insert patient in best position of best route
+        nursePlans.get(nurseIndexInsert).add(stopIndexInsert, patient);
+    }
+    
+    /** 
+     * Insert point into best route selected by choosing route containing closest neighbor of patient.
+     * Not necessarily best route, but slightly faster than insertInBestRoute()
+     * @param patient
+     */
+    public void insertInBestRouteInferior(Patient patient) {
         // Assumes patient is not in any route and needs to be inserted
+        // Does not necessarily insert into best route, as it only looks at distance to one patient at a time
+        // First find closest neighbor of patient
         int closestNeighbor = -1;
         double minDist = Double.MAX_VALUE;
-        for (int i=0; i<this.problem.getPatients().length+1; i++) {
-            if (this.problem.getTravelTimes()[patient.getId()][i] < minDist) {
-                if (i == patient.getId()) {
-                    continue;
-                } // else:
-                minDist = this.problem.getTravelTimes()[patient.getId()][i];
-                closestNeighbor = i;
+        int closestNeighborNurse = -1;
+        int closestNeighborStop = -1;
+        for (int nurseIndex=0; nurseIndex<nursePlans.size(); nurseIndex++) {
+            for (int stopIndex=0; stopIndex<nursePlans.get(nurseIndex).size(); stopIndex++) {
+                int neighborId = nursePlans.get(nurseIndex).get(stopIndex).getId();
+                // Check distance, compare to minimum
+                if (this.problem.getTravelTimes()[patient.getId()][neighborId] < minDist) {
+                    minDist = this.problem.getTravelTimes()[patient.getId()][neighborId];
+                    closestNeighbor = neighborId;
+                    closestNeighborNurse = nurseIndex;
+                    closestNeighborStop = stopIndex;
+                }
             }
         }
+        // Check if depot is closer
+        if (this.problem.getTravelTimes()[patient.getId()][0] < minDist) {
+            int nurseIndexInsert = -1;
+            int stopIndexInsert = -1;
+            double smallestDistIncrease = Double.MAX_VALUE;
+            for (int nurseIndex=0; nurseIndex<nursePlans.size(); nurseIndex++) {
+                if (nursePlans.get(nurseIndex).size() > 0) {
+                    // Check if inserting at start of route is better
+                    
+                }
+            }
+        }
+        // Decide whether to place before or after
+        if (closestNeighborStop == 0) {
+            // Depot is closest, place
+        }
+        double distBefore = 
+                this.problem.getTravelTimes()[0][0]; // TODO: Fix
         
     }
     
