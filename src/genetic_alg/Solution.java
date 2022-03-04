@@ -1,17 +1,30 @@
 package genetic_alg;
 
+import java.awt.Color;
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
+import javax.swing.JFrame;
+
 public class Solution {
     private Problem problem;
     private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
-    private static double DELAY_FACTOR = 100.;
-    private static double OVER_CAPACITY_PUNISHMENT = 1000.;
+    final static double DELAY_FACTOR = 100.;
+    final static double OVER_CAPACITY_PUNISHMENT = 1000.;
 
     public Solution(Problem problem) {
         this.problem = problem;
+    }
+    
+    public void displaySolution() {
+
+        JFrame f = new JFrame();
+        f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        final RouteDisplayComponent comp = new RouteDisplayComponent(this.problem);
+        comp.setPreferredSize(new Dimension(320, 200));
+        
     }
     
     public void generateRandomUnfeasible() {
