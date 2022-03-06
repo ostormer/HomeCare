@@ -2,11 +2,16 @@ package genetic_alg;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Random;
 
 import javax.swing.JComponent;
 
 public class RouteDisplayComponent extends JComponent {
+
+    private static final long serialVersionUID = 1L;
+    public static final int DRAW_FACTOR = 10;
 
     private static class Line{
         final int x1; 
@@ -42,31 +47,68 @@ public class RouteDisplayComponent extends JComponent {
     public RouteDisplayComponent(Problem problem) {
         super();
         this.problem = problem;
+        this.addAllPoints();
     }
 
-    public void drawLinesFromSolution(Solution solution) {
-        
+    public void displaySolution(Solution solution) {
+        Random rand = new Random();
+        for (ArrayList<Patient> plan : solution.getNursePlans()) {
+            if (plan.size() == 0) {
+                continue;
+            }
+            // Select random color for nurse
+            final float hue = rand.nextFloat();
+            // Saturation between 0.1 and 0.3
+            final float saturation = (rand.nextInt(2000) + 1000) / 10000f;
+            final float luminance = 0.9f;
+            final Color color = Color.getHSBColor(hue, saturation, luminance);
+            // Draw lines
+            addLine(problem.getxCoordDepot(),
+                    problem.getyCoordDepot(),
+                    plan.get(0).getxCoord(),
+                    plan.get(0).getyCoord(),
+                    color); // From depot
+            for (int i=0; i<plan.size()-1; i++) {
+                addLine(plan.get(i).getxCoord(),
+                        plan.get(i).getyCoord(),
+                        plan.get(i+1).getxCoord(),
+                        plan.get(i+1).getyCoord(),
+                        color); // Between patients
+            }
+            addLine(plan.get(plan.size()-1).getxCoord(),
+                    plan.get(plan.size()-1).getyCoord(),
+                    problem.getxCoordDepot(),
+                    problem.getyCoordDepot(),
+                    color); // To depot
+        }
+        repaint();
     }
 
     public void addAllPoints() {
         for (Patient patient : this.problem.getPatients()) {
-            addPoint(patient.getxCoord(), patient.getyCoord(), new Color(0, 0, 1));
+            addPoint(patient.getxCoord(), patient.getyCoord(), new Color(0, 0, 255));
         }
+        // Add depot
+        addPoint(this.problem.getxCoordDepot(), this.problem.getyCoordDepot(), new Color(255, 0, 0));
         repaint();
     }
     
     public void addLine(int x1, int x2, int x3, int x4, Color color) {
-        lines.add(new Line(x1,x2,x3,x4, color));        
-        // repaint();
-    }
-
-    public void clearLines() {
-        lines.clear();
+        lines.add(new Line((x1 + 1) * DRAW_FACTOR,
+                (x2 + 1) * DRAW_FACTOR,
+                (x3 + 1) * DRAW_FACTOR,
+                (x4 + 1) * DRAW_FACTOR,
+                color));        
         // repaint();
     }
     
     public void addPoint(int x, int y, Color color) {
-        points.add(new Point(x, y, color));
+        points.add(new Point((x + 1) * DRAW_FACTOR, (y + 1) * DRAW_FACTOR, color));
+        // repaint();
+    }
+    
+    public void clearLines() {
+        lines.clear();
         // repaint();
     }
     
@@ -84,7 +126,7 @@ public class RouteDisplayComponent extends JComponent {
         }
         for (Point point : points) {
             g.setColor(point.color);
-            g.drawOval(point.x - 1, point.y - 1, 2, 2);
+            g.drawOval(point.x-DRAW_FACTOR/2, point.y-DRAW_FACTOR/2, DRAW_FACTOR, DRAW_FACTOR);
         }
         
     }

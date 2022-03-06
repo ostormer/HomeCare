@@ -1,6 +1,5 @@
 package genetic_alg;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,13 +17,25 @@ public class Solution {
         this.problem = problem;
     }
     
-    public void displaySolution() {
+    public RouteDisplayComponent displaySolution() {
 
-        JFrame f = new JFrame();
+        JFrame.setDefaultLookAndFeelDecorated(true);  
+        JFrame f = new JFrame("Route Display");
         f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        f.setSize(new Dimension((problem.getMaxXCoord() + 10) * RouteDisplayComponent.DRAW_FACTOR,
+                (problem.getMaxYCoord() + 10) * RouteDisplayComponent.DRAW_FACTOR));
         final RouteDisplayComponent comp = new RouteDisplayComponent(this.problem);
-        comp.setPreferredSize(new Dimension(320, 200));
-        
+        f.add(comp);
+        comp.displaySolution(this);
+        comp.setPreferredSize(new Dimension(problem.getMaxXCoord() * RouteDisplayComponent.DRAW_FACTOR,
+                problem.getMaxYCoord() * RouteDisplayComponent.DRAW_FACTOR));
+        f.setVisible(true);
+        return comp;
+    }
+    
+    public void updateDisplay(RouteDisplayComponent comp) {
+        comp.clearLines();
+        comp.displaySolution(this);
     }
     
     public void generateRandomUnfeasible() {
@@ -119,6 +130,7 @@ public class Solution {
      * Not necessarily best route, but slightly faster than insertInBestRoute()
      * @param patient
      */
+    /*
     public void insertInBestRouteInferior(Patient patient) {
         // Assumes patient is not in any route and needs to be inserted
         // Does not necessarily insert into best route, as it only looks at distance to one patient at a time
@@ -159,12 +171,29 @@ public class Solution {
                 this.problem.getTravelTimes()[0][0]; // TODO: Fix
         
     }
-    
+    */
     public Solution[] crossoverGreedyInsertion(Solution other) {
         Solution[] offspring = new Solution[2];
         // TODO: Crossover as described at end of Visma lecture notes
         
         return offspring;
+    }
+    
+    public void mutateImproveOnePatient() {
+        Random rand = new Random();
+        int improveId = rand.nextInt(this.problem.getPatients().length);
+        // Find chosen patient and replace it
+        for (ArrayList<Patient> plan : this.nursePlans) {
+            for (int stop=0; stop<plan.size(); stop++) {
+                Patient patient = plan.get(stop);
+                if (patient.getId() - 1 == improveId) {
+                    plan.remove(stop);
+                    insertInBestRoute(patient);
+                    return;
+                }
+            }
+        }
+        System.out.println("Did not find patient to improve in solution. Something is wrong.");
     }
     
     public void mutateSwapOnePatient() { // Dumb mutation
@@ -302,4 +331,9 @@ public class Solution {
         System.out.println(delayTotal); // TODO: Remove print
         return travelTimeTotal + (double) delayTotal * DELAY_FACTOR;
     }
+
+    public ArrayList<ArrayList<Patient>> getNursePlans() {
+        return nursePlans;
+    }
+    
 }

@@ -16,6 +16,8 @@ public class Problem {
 	private double benchmark;
 	private int xCoordDepot;
 	private int yCoordDepot;
+	private int maxXCoord = Integer.MIN_VALUE;
+	private int maxYCoord = Integer.MIN_VALUE;
 	private int returnTime;
 	private Patient[] patients;
 	// private ArrayList<ArrayList<Double>> travelTimes;
@@ -57,7 +59,13 @@ public class Problem {
 		        Double endTime = patientMap.get("end_time");
 		        Double startTime = patientMap.get("start_time");
 		        Double xCoord = patientMap.get("x_coord");
+		        if (xCoord > this.maxXCoord) {
+		            this.maxXCoord = xCoord.intValue();
+		        }
 		        Double yCoord = patientMap.get("y_coord");
+		        if (yCoord > this.maxYCoord) {
+		            this.maxYCoord = yCoord.intValue();
+		        }
 		        Patient patient = new Patient(
 		                Integer.parseInt(patientEntry.getKey()),
 		                careTime.intValue(),
@@ -106,6 +114,12 @@ public class Problem {
     }
     public int getyCoordDepot() {
         return yCoordDepot;
+    }
+    public int getMaxXCoord() {
+        return maxXCoord;
+    }
+    public int getMaxYCoord() {
+        return maxYCoord;
     }
     public int getReturnTime() {
         return returnTime;
