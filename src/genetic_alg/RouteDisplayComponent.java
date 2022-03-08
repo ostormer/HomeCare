@@ -41,27 +41,34 @@ public class RouteDisplayComponent extends JComponent {
     }
     
     private Problem problem;
+    private Color[] nurseColors;
     private final LinkedList<Line> lines = new LinkedList<Line>();
     private final LinkedList<Point> points = new LinkedList<Point>();
     
     public RouteDisplayComponent(Problem problem) {
         super();
         this.problem = problem;
-        this.addAllPoints();
-    }
-
-    public void displaySolution(Solution solution) {
+        this.nurseColors = new Color[problem.getNbrNurses()];
         Random rand = new Random();
-        for (ArrayList<Patient> plan : solution.getNursePlans()) {
-            if (plan.size() == 0) {
-                continue;
-            }
+        for (int i=0; i<nurseColors.length; i++) {
             // Select random color for nurse
             final float hue = rand.nextFloat();
             // Saturation between 0.1 and 0.3
             final float saturation = (rand.nextInt(2000) + 1000) / 10000f;
             final float luminance = 0.9f;
-            final Color color = Color.getHSBColor(hue, saturation, luminance);
+            nurseColors[i] = Color.getHSBColor(hue, saturation, luminance);
+        }
+        
+        this.addAllPoints();
+    }
+
+    public void displaySolution(Solution solution) {
+        for (int planIndex=0; planIndex<solution.getNursePlans().size(); planIndex++) {
+            ArrayList<Patient> plan = solution.getNursePlans().get(planIndex);
+            if (plan.size() == 0) {
+                continue;
+            }
+            final Color color = this.nurseColors[planIndex];
             // Draw lines
             addLine(problem.getxCoordDepot(),
                     problem.getyCoordDepot(),

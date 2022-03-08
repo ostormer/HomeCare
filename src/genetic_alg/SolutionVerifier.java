@@ -18,12 +18,17 @@ public class SolutionVerifier {
         System.out.println(sortedSolution.toStringRepresentation());
         System.out.println(sortedSolution.computeUnfeasibleUtility());
         RouteDisplayComponent comp = sortedSolution.displaySolution();
-        for (int i=0; i<10; i++) {
-            TimeUnit.SECONDS.sleep(2);
+        sortedSolution.updateDisplay(comp);
+        for (int i=0; i<1000; i++) {
             sortedSolution.mutateImproveOnePatient();
-            sortedSolution.updateDisplay(comp);
+            if(i%100 == 0) {
+                sortedSolution.updateDisplay(comp);
+                TimeUnit.SECONDS.sleep(1);
+            }
         }
-        
+        sortedSolution.updateDisplay(comp);
+        System.out.println(sortedSolution.toStringRepresentation());
+        System.out.println(sortedSolution.computeUnfeasibleUtility());
 	}
 
 }

@@ -60,6 +60,9 @@ public class Solution {
             Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
         }
     }
+    public void generateRandomGreedy(int nbrActiveNurses) {
+        
+    }
     /**
      * Insert patient into route where it increases travel time the least.
      * Does not take possible care time window into account
@@ -213,13 +216,21 @@ public class Solution {
     
     public String toStringRepresentation() {
         String out = "[\n";
-        for (ArrayList<Patient> nursePlan : this.nursePlans) {
+        for (int nurseIndex=0; nurseIndex<this.nursePlans.size(); nurseIndex++) {
+            ArrayList<Patient> nursePlan = this.nursePlans.get(nurseIndex);
             out += "[ ";
-            for (Patient patient : nursePlan) {
-                out += String.valueOf(patient.getId()) + ", ";
+            for (int stopIndex=0; stopIndex<nursePlan.size(); stopIndex++) {
+                out += String.valueOf(nursePlan.get(stopIndex).getId());
+                if (stopIndex < nursePlan.size() - 1) {
+                    out += ", ";
+                }
             }
-            out += "]\n";
+            out += "]";
+            if (nurseIndex < this.nursePlans.size() - 1) {
+                out += ",\n";
+            }
         }
+        
         return out + "]";
     }
     
