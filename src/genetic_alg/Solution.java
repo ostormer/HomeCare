@@ -2,24 +2,34 @@ package genetic_alg;
 
 import java.awt.Dimension;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.swing.JFrame;
 
 public class Solution {
     private Problem problem;
     private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
+    private List<Integer> activeNurses;
     final static double DELAY_FACTOR = 100.;
     final static double OVER_CAPACITY_PUNISHMENT = 1000.;
 
     public Solution(Problem problem) {
         this.problem = problem;
+        // Create empty ArrayList of plans.
+        this.nursePlans = new ArrayList<ArrayList<Patient>>();
+        for (int i = 0; i < this.problem.getNbrNurses(); i++) {
+            this.nursePlans.add(new ArrayList<Patient>());
+        }
     }
     
     public RouteDisplayComponent displaySolution() {
-
-        JFrame.setDefaultLookAndFeelDecorated(true);  
+        JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame f = new JFrame("Route Display");
         f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         f.setSize(new Dimension((problem.getMaxXCoord() + 10) * RouteDisplayComponent.DRAW_FACTOR,
@@ -40,15 +50,13 @@ public class Solution {
     
     public void generateRandomUnfeasible() {
         Random rand = new Random();
-        // Create empty ArrayList of plans.
-        this.nursePlans = new ArrayList<ArrayList<Patient>>();
-        for (int i = 0; i < this.problem.getNbrNurses(); i++) {
-            this.nursePlans.add(new ArrayList<Patient>());
-        }
+        
         for (Patient patient : this.problem.getPatients()) {
             // Assign patient to random Nurse completely at random
             this.nursePlans.get(rand.nextInt(this.nursePlans.size())).add(patient);
         }
+        this.activeNurses = IntStream.rangeClosed(0, this.problem.getNbrNurses()-1)
+                .boxed().collect(Collectors.toList());
     }
     
     public void generateRandomSorted() {
@@ -60,8 +68,33 @@ public class Solution {
             Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
         }
     }
+    
     public void generateRandomGreedy(int nbrActiveNurses) {
+        Random rand = new Random();
+        List<Integer> range = new ArrayList<>();
+        for (int i = 0; i <= this.problem.getNbrNurses(); i++) {
+            range.add(i);
+        }
+        Collections.shuffle(range);
+        this.activeNurses = range.subList(0, nbrActiveNurses);
         
+        // test clustering to find distinct start points
+        List<Patient> unassignedPatients = new LinkedList<Patient>(Arrays.asList(this.problem.getPatients()));
+        // Assign a random patient to each nurse
+        // TODO: Try clustering for better initial patient spread
+        for (Integer nurseIndex : this.activeNurses) {
+            // Select random patient from unassigned patient list.
+            int assignPatientIndex = rand.nextInt(unassignedPatients.size());
+            // Remove it from list of unassigned patients and assign it to a nurse.
+            Patient assignPatient = unassignedPatients.remove(assignPatientIndex);
+            this.nursePlans.get(nurseIndex).add(assignPatient);
+        }
+        // assign rest of patients by greedily adding them to routes in a random order
+        Collections.shuffle(unassignedPatients);
+        while (unassignedPatients.size() > 0) {
+            Patient assignPatient = unassignedPatients.remove(0);
+            this.insertInBestRoute(assignPatient);
+        }
     }
     /**
      * Insert patient into route where it increases travel time the least.
@@ -73,7 +106,7 @@ public class Solution {
         int nurseIndexInsert = -1;
         int stopIndexInsert = -1;
         // Search for smallest increase
-        for (int nurseIndex=0; nurseIndex<nursePlans.size(); nurseIndex++) {
+        for (int nurseIndex : this.activeNurses) {
             // For each nurse's plan
             // If plan empty
             if (nursePlans.get(nurseIndex).size() == 0) {
