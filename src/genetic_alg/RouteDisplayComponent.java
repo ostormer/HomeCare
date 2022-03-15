@@ -1,7 +1,9 @@
 package genetic_alg;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
@@ -127,13 +129,15 @@ public class RouteDisplayComponent extends JComponent {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setStroke(new BasicStroke(3));
         for (Line line : lines) {
-            g.setColor(line.color);
-            g.drawLine(line.x1, line.y1, line.x2, line.y2);
+            g2.setColor(line.color);
+            g2.drawLine(line.x1, line.y1, line.x2, line.y2);
         }
         for (Point point : points) {
-            g.setColor(point.color);
-            g.drawOval(point.x-DRAW_FACTOR/2, point.y-DRAW_FACTOR/2, DRAW_FACTOR, DRAW_FACTOR);
+            g2.setColor(point.color);
+            g2.drawOval(point.x-DRAW_FACTOR/2, point.y-DRAW_FACTOR/2, DRAW_FACTOR, DRAW_FACTOR);
         }
         
     }

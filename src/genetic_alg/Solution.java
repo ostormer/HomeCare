@@ -16,11 +16,13 @@ public class Solution {
     private Problem problem;
     private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
     private List<Integer> activeNurses;
+    private Random rand;
     final static double DELAY_FACTOR = 100.;
     final static double OVER_CAPACITY_PUNISHMENT = 1000.;
 
     public Solution(Problem problem) {
         this.problem = problem;
+        this.rand = new Random();
         // Create empty ArrayList of plans.
         this.nursePlans = new ArrayList<ArrayList<Patient>>();
         for (int i = 0; i < this.problem.getNbrNurses(); i++) {
@@ -49,7 +51,6 @@ public class Solution {
     }
     
     public void generateRandomUnfeasible() {
-        Random rand = new Random();
         
         for (Patient patient : this.problem.getPatients()) {
             // Assign patient to random Nurse completely at random
@@ -70,7 +71,6 @@ public class Solution {
     }
     
     public void generateRandomGreedy(int nbrActiveNurses) {
-        Random rand = new Random();
         List<Integer> range = new ArrayList<>();
         for (int i = 0; i <= this.problem.getNbrNurses(); i++) {
             range.add(i);
@@ -84,7 +84,7 @@ public class Solution {
         // TODO: Try clustering for better initial patient spread
         for (Integer nurseIndex : this.activeNurses) {
             // Select random patient from unassigned patient list.
-            int assignPatientIndex = rand.nextInt(unassignedPatients.size());
+            int assignPatientIndex = rand.nextInt(unassignedPatients.size() - 1);
             // Remove it from list of unassigned patients and assign it to a nurse.
             Patient assignPatient = unassignedPatients.remove(assignPatientIndex);
             this.nursePlans.get(nurseIndex).add(assignPatient);
@@ -208,15 +208,47 @@ public class Solution {
         
     }
     */
+    @SuppressWarnings("unchecked")
     public Solution[] crossoverGreedyInsertion(Solution other) {
         Solution[] offspring = new Solution[2];
         // TODO: Crossover as described at end of Visma lecture notes
-        
+        int selfNurseIndex = this.activeNurses.get(rand.nextInt(this.activeNurses.size()));
+        ArrayList<Patient> selfPatients = (ArrayList<Patient>) this.nursePlans.get(selfNurseIndex).clone();
+        int otherNurseIndex = other.activeNurses.get(rand.nextInt(other.activeNurses.size()));
+        ArrayList<Patient> otherPatients = (ArrayList<Patient>) other.nursePlans.get(otherNurseIndex).clone();
+        // Remove patients in selfPatients from other's nursePlans
+        thisPatientsLoop:
+        for (Patient patient : selfPatients) {
+            for (ArrayList<Patient> nursePlan : other.nursePlans ) {
+                for (int i=0; i<nursePlan.size(); i++) {
+                    if (nursePlan.get(i) == patient) {
+                        // Found match! Remove it and continue
+                        nursePlan.remove(i);
+                        continue thisPatientsLoop;
+                    }
+                }
+            }
+        }
+        // Remove patients in otherPatients from self's nursePlans
+        otherPatientsLoop:
+        for (Patient patient : otherPatients) {
+            for (ArrayList<Patient> nursePlan : this.nursePlans ) {
+                for (int i=0; i<nursePlan.size(); i++) {
+                    if (nursePlan.get(i) == patient) {
+                        // Found match! Remove it and continue
+                        nursePlan.remove(i);
+                        continue otherPatientsLoop;
+                    }
+                }
+            }
+        }
+        // Add to offspring:
+        this.clon
         return offspring;
     }
     
     public void mutateImproveOnePatient() {
-        Random rand = new Random();
+        
         int improveId = rand.nextInt(this.problem.getPatients().length);
         // Find chosen patient and replace it
         for (ArrayList<Patient> plan : this.nursePlans) {
@@ -234,7 +266,6 @@ public class Solution {
     
     public void mutateSwapOnePatient() { // Dumb mutation
         // TODO: Write more mutations, ones that greedily improve solution in random ways
-        Random rand = new Random();
         int from = rand.nextInt(this.problem.getNbrNurses());
         while (this.nursePlans.get(from).size() == 0) { // Select again if plan of nurse is empty
             from = rand.nextInt(this.problem.getNbrNurses());
@@ -375,9 +406,20 @@ public class Solution {
         System.out.println(delayTotal); // TODO: Remove print
         return travelTimeTotal + (double) delayTotal * DELAY_FACTOR;
     }
+    
+    public Solution copy() {
+        Solution child = new Solution(this.problem);
+        
+        child.activeNurses = new LinkedList<Integer>(this.activeNurses);
+        child.nursePlans = new ArrayList<ArrayList<Patient>>();
+    }
 
     public ArrayList<ArrayList<Patient>> getNursePlans() {
         return nursePlans;
+    }
+    
+    public List<Integer> getActiveNurses() {
+        return activeNurses;
     }
     
 }
