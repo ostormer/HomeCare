@@ -17,6 +17,7 @@ public class Solution {
     private ArrayList<ArrayList<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
     private List<Integer> activeNurses;
     private Random rand;
+
     final static double DELAY_FACTOR = 100.;
     final static double OVER_CAPACITY_PUNISHMENT = 1000.;
 
@@ -210,18 +211,21 @@ public class Solution {
     */
     @SuppressWarnings("unchecked")
     public Solution[] crossoverGreedyInsertion(Solution other) {
+        // Crossover as described at end of Visma lecture notes
         Solution[] offspring = new Solution[2];
-        // TODO: Crossover as described at end of Visma lecture notes
+        
         int selfNurseIndex = this.activeNurses.get(rand.nextInt(this.activeNurses.size()));
         ArrayList<Patient> selfPatients = (ArrayList<Patient>) this.nursePlans.get(selfNurseIndex).clone();
         int otherNurseIndex = other.activeNurses.get(rand.nextInt(other.activeNurses.size()));
         ArrayList<Patient> otherPatients = (ArrayList<Patient>) other.nursePlans.get(otherNurseIndex).clone();
         // Remove patients in selfPatients from other's nursePlans
+        Solution otherChild = other.copy();
+        Solution thisChild = this.copy();
         thisPatientsLoop:
-        for (Patient patient : selfPatients) {
-            for (ArrayList<Patient> nursePlan : other.nursePlans ) {
+        for (Patient patientToRemove : selfPatients) {
+            for (ArrayList<Patient> nursePlan : otherChild.nursePlans ) {
                 for (int i=0; i<nursePlan.size(); i++) {
-                    if (nursePlan.get(i) == patient) {
+                    if (nursePlan.get(i) == patientToRemove) {
                         // Found match! Remove it and continue
                         nursePlan.remove(i);
                         continue thisPatientsLoop;
@@ -231,10 +235,10 @@ public class Solution {
         }
         // Remove patients in otherPatients from self's nursePlans
         otherPatientsLoop:
-        for (Patient patient : otherPatients) {
-            for (ArrayList<Patient> nursePlan : this.nursePlans ) {
+        for (Patient patientToRemove : otherPatients) {
+            for (ArrayList<Patient> nursePlan : thisChild.nursePlans ) {
                 for (int i=0; i<nursePlan.size(); i++) {
-                    if (nursePlan.get(i) == patient) {
+                    if (nursePlan.get(i) == patientToRemove) {
                         // Found match! Remove it and continue
                         nursePlan.remove(i);
                         continue otherPatientsLoop;
@@ -242,8 +246,16 @@ public class Solution {
                 }
             }
         }
+        // Loop through patients removed from other and re-insert them
+        for (Patient removedPatient : selfPatients) {
+            otherChild.insertInBestRoute(removedPatient);
+        }
+        for (Patient removedPatient : otherPatients) {
+            thisChild.insertInBestRoute(removedPatient);
+        }
         // Add to offspring:
-        this.clon
+        offspring[0] = thisChild;
+        offspring[1] = otherChild;
         return offspring;
     }
     
@@ -275,7 +287,10 @@ public class Solution {
         int patientToIndex = rand.nextInt(this.nursePlans.get(to).size());
         Patient movePatient = this.nursePlans.get(from).remove(patientFromIndex);
         this.nursePlans.get(to).add(patientToIndex, movePatient);
-        
+    }
+    
+    public void mutateSplitOneNursePlan() {
+        // TODO: Implement mutation splitting one nursePlan into two shorter ones
     }
     
     public String toStringRepresentation() {
@@ -408,10 +423,16 @@ public class Solution {
     }
     
     public Solution copy() {
+        // Return copy of this, but with new lists containing pointers to the same patient objects
+        // Could call it a semi-shallow copy.
         Solution child = new Solution(this.problem);
         
         child.activeNurses = new LinkedList<Integer>(this.activeNurses);
         child.nursePlans = new ArrayList<ArrayList<Patient>>();
+        for (int i=0; i<this.nursePlans.size(); i++) {
+            child.nursePlans.add(new ArrayList<Patient>(this.nursePlans.get(i)));
+        }
+        return child;
     }
 
     public ArrayList<ArrayList<Patient>> getNursePlans() {
