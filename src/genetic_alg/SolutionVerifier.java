@@ -8,36 +8,18 @@ public class SolutionVerifier {
 
 	    Problem problem = new Problem("src\\train\\train_0.json");
 	    
+	    GenAlg solver = new GenAlg(problem);
+	    solver.run();
+	    /*
 	    Solution randomSolution = new Solution(problem);
 	    randomSolution.generateRandomUnfeasible();
 	    System.out.println(randomSolution.toStringRepresentation());
-	    System.out.println(randomSolution.computeUnfeasibleUtility());
-	    
-	    /*
-	    Solution sortedSolution = new Solution(problem);
-	    sortedSolution.generateRandomSorted();
-        System.out.println(sortedSolution.toStringRepresentation());
-        System.out.println(sortedSolution.computeUnfeasibleUtility());
-        RouteDisplayComponent comp = sortedSolution.displaySolution();
-        sortedSolution.updateDisplay(comp);
-        for (int i=0; i<1000; i++) {
-            sortedSolution.mutateImproveOnePatient();
-            if(i%100 == 0) {
-                sortedSolution.updateDisplay(comp);
-                TimeUnit.SECONDS.sleep(1);
-            }
-        }
-        sortedSolution.updateDisplay(comp);
-        System.out.println(sortedSolution.toStringRepresentation());
-        System.out.println(sortedSolution.computeUnfeasibleUtility());
-        
-        TimeUnit.SECONDS.sleep(5);
-        */
+	    System.out.println(randomSolution.computeUnfeasibleFitness());
 	    
         Solution greedySolution = new Solution(problem);
         greedySolution.generateRandomGreedy(problem.getNbrNurses());
         System.out.println(greedySolution.toStringRepresentation());
-        System.out.println(greedySolution.computeUnfeasibleUtility());
+        System.out.println(greedySolution.computeUnfeasibleFitness());
         RouteDisplayComponent comp = greedySolution.displaySolution();
         greedySolution.updateDisplay(comp);
         for (int i=0; i<1000; i++) {
@@ -52,7 +34,9 @@ public class SolutionVerifier {
         }
         greedySolution.updateDisplay(comp);
         System.out.println(greedySolution.toStringRepresentation());
-        System.out.println(greedySolution.computeUnfeasibleUtility());
+        System.out.println(greedySolution.computeUnfeasibleFitness());
+        
+        */
 	}
 
 }

@@ -14,7 +14,7 @@ import javax.swing.JFrame;
 
 public class Solution {
     private Problem problem;
-    private List<List<Patient>> nursePlans; // The actual solution TODO: Test performance of List vs ArrayList
+    private List<List<Patient>> nursePlans;
     private List<Integer> activeNurses;
     private Random rand;
     private double fitness;
@@ -71,7 +71,7 @@ public class Solution {
         }
         this.activeNurses = IntStream.rangeClosed(0, this.problem.getNbrNurses()-1)
                 .boxed().collect(Collectors.toList());
-        this.computeUnfeasibleUtility();
+        this.computeUnfeasibleFitness();
         this.fitnessChanged = false;
     }
     
@@ -83,7 +83,7 @@ public class Solution {
         for (int i = 0; i < this.problem.getNbrNurses(); i++) {
             Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
         }
-        this.computeUnfeasibleUtility();
+        this.computeUnfeasibleFitness();
         this.fitnessChanged = false;
     }
     
@@ -112,7 +112,7 @@ public class Solution {
             Patient assignPatient = unassignedPatients.remove(0);
             this.insertInBestRoute(assignPatient);
         }
-        this.computeUnfeasibleUtility();
+        this.computeUnfeasibleFitness();
         this.fitnessChanged = false;
     }
     /**
@@ -252,13 +252,13 @@ public class Solution {
     }
     
     public void mutateSwapOnePatient() { // Dumb mutation
+        int to = rand.nextInt(this.problem.getNbrNurses());
         int from = rand.nextInt(this.problem.getNbrNurses());
-        while (this.nursePlans.get(from).size() == 0) { // Select again if plan of nurse is empty
+        while (this.nursePlans.get(from).size() == 0 || to == from) { // Select again if plan of nurse is empty
             from = rand.nextInt(this.problem.getNbrNurses());
         }
-        int to = rand.nextInt(this.problem.getNbrNurses());
         int patientFromIndex = rand.nextInt(this.nursePlans.get(from).size());
-        int patientToIndex = rand.nextInt(this.nursePlans.get(to).size());
+        int patientToIndex = rand.nextInt(this.nursePlans.get(to).size()+1);
         Patient movePatient = this.nursePlans.get(from).remove(patientFromIndex);
         this.nursePlans.get(to).add(patientToIndex, movePatient);
         if (this.nursePlans.get(from).size() == 0) {
@@ -300,7 +300,7 @@ public class Solution {
     }
     
     public void mutate() {
-        double mutationNumber = this.rand.nextDouble() * Solution.mutationWeights.get(Solution.mutationWeights.size());
+        double mutationNumber = this.rand.nextDouble() * Solution.mutationWeights.get(Solution.mutationWeights.size()-1);
         int mutationId = -1;
         for (int i=0; i<Solution.mutationWeights.size(); i++) {
             if (mutationNumber < Solution.mutationWeights.get(i)) {
@@ -378,7 +378,7 @@ public class Solution {
         return true;
     }
     
-    public double computeFeasibleUtility() {
+    public double computeFeasibleFitness() {
         // Assumes solution is already confirmed as feasible
         double travelTimeTotal = 0;
         // Iterate through all nurses
@@ -406,7 +406,7 @@ public class Solution {
         return travelTimeTotal;
     }
     
-    public double computeUnfeasibleUtility() {
+    public double computeUnfeasibleFitness() {
         double travelTimeTotal = 0;
         int delayTotal = 0;
         int overCapacityTotal = 0;
@@ -447,8 +447,6 @@ public class Solution {
                 delayTotal += currentTime - this.problem.getReturnTime();
             }
         }
-        System.out.println("Total delay:"); // TODO: Remove print
-        System.out.println(delayTotal); // TODO: Remove print
         this.fitness = travelTimeTotal
                 + ((double) delayTotal * DELAY_FACTOR)
                 + ((double) overCapacityTotal * OVER_CAPACITY_FACTOR);
