@@ -4,8 +4,8 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 import javax.swing.JComponent;
@@ -66,7 +66,7 @@ public class RouteDisplayComponent extends JComponent {
 
     public void displaySolution(Solution solution) {
         for (int planIndex=0; planIndex<solution.getNursePlans().size(); planIndex++) {
-            ArrayList<Patient> plan = solution.getNursePlans().get(planIndex);
+            List<Patient> plan = solution.getNursePlans().get(planIndex);
             if (plan.size() == 0) {
                 continue;
             }

@@ -9,8 +9,7 @@ public class Params {
     static final int tournamentSize = 4;
     // Mutations
     static final double mutationRate = 0.2;
+    static final double mutationImproveWeight = 10;
+    static final double mutationSwapWeight = 5;
     static final double mutationSplitWeight = 1;
-    static final double mutationImproveWeight = 2;
-    static final double mutationMoveWeight = 1;
-    static final double mutationReorderWeight = 2;
 }
