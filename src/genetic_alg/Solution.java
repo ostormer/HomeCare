@@ -21,8 +21,6 @@ public class Solution {
     private boolean fitnessChanged;
 
     private static ArrayList<Double> mutationWeights = computeMutationWeights();
-    final static double DELAY_FACTOR = 100.;
-    final static double OVER_CAPACITY_FACTOR = 100;
     
     public Solution(Problem problem) {
         this.problem = problem;
@@ -40,6 +38,7 @@ public class Solution {
         mw.add(Params.mutationImproveWeight);
         mw.add(mw.get(mw.size()-1) + Params.mutationSwapWeight);
         mw.add(mw.get(mw.size()-1) + Params.mutationSplitWeight);
+        mw.add(mw.get(mw.size()-1) + Params.mutationSortWeight);
         return mw;
     }
     
@@ -299,6 +298,18 @@ public class Solution {
         this.fitnessChanged = true;
     }
     
+    public void mutateSortOneNursePlan() {
+        // Find one random nursePlan larger than 2
+        int nurseIndex = this.rand.nextInt(this.activeNurses.size());
+        while (this.nursePlans.get(nurseIndex).size() < 2) {
+            nurseIndex = this.rand.nextInt(this.activeNurses.size());
+        }
+        List<Patient> sortPlan = this.nursePlans.get(nurseIndex);
+        Collections.sort(sortPlan, Patient.COMPARE_BY_LATEST_CARE_START);
+        
+        this.fitnessChanged = true;
+    }
+    
     public void mutate() {
         double mutationNumber = this.rand.nextDouble() * Solution.mutationWeights.get(Solution.mutationWeights.size()-1);
         int mutationId = -1;
@@ -317,6 +328,9 @@ public class Solution {
             break;
         case 2: // Split
             this.mutateSplitOneNursePlan();
+            break;
+        case 3: // Sort one by time
+            this.mutateSortOneNursePlan();
             break;
         }
         
@@ -439,8 +453,6 @@ public class Solution {
             travelTimeTotal += this.problem.getTravelTimes()[currentLocation][0];
             currentTime += this.problem.getTravelTimes()[currentLocation][0];
             if (usedCapacity > this.problem.getCapacityNurse()) {
-                System.out.println("Nurse over capacity");
-                // TODO: Add some extra punishment? or remove this check
                 overCapacityTotal += usedCapacity - this.problem.getCapacityNurse();
             }
             if (currentTime > this.problem.getReturnTime()) {
@@ -448,8 +460,8 @@ public class Solution {
             }
         }
         this.fitness = travelTimeTotal
-                + ((double) delayTotal * DELAY_FACTOR)
-                + ((double) overCapacityTotal * OVER_CAPACITY_FACTOR);
+                + ((double) delayTotal * Params.delayPunishmentFactor)
+                + ((double) overCapacityTotal * Params.overCapacityPunishmentFactor);
         return this.fitness;
     }
     
