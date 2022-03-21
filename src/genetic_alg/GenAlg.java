@@ -2,11 +2,11 @@ package genetic_alg;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
 public class GenAlg {
-    private int popSize;
     private int generation = 0;
     private Problem problem;
     private List<Solution> population; // TODO: divide into feasible and infeasible pops
@@ -18,10 +18,10 @@ public class GenAlg {
         population = new ArrayList<Solution>();
     }
     
-    public void generatePop() {
+    private void generatePop() {
         // Generates population.
         // Right now all of them as random sorted by time
-        for (int i=0; i<popSize; i++) {
+        for (int i=0; i<Params.popSize; i++) {
             Solution s = new Solution(problem);
             if (i % 3 == 0) {
                 s.generateRandomSorted();                
@@ -34,9 +34,9 @@ public class GenAlg {
         }
     }
     
-    public ArrayList<Solution> parentSelection() {
+    private List<Solution> parentSelection() {
         // TODO: Implement elitism
-        ArrayList<Solution> parents = new ArrayList<Solution>();
+        List<Solution> parents = new ArrayList<Solution>();
         while (parents.size() < Params.nbrParents) {
             Tournament t = new Tournament(population);
             parents.add(t.run());
@@ -44,8 +44,8 @@ public class GenAlg {
         return parents;
     }
     
-    public ArrayList<Solution> crossover(ArrayList<Solution> parents) {
-        ArrayList<Solution> offspring = new ArrayList<Solution>();
+    private List<Solution> crossover(List<Solution> parents) {
+        List<Solution> offspring = new ArrayList<Solution>();
         Collections.shuffle(parents);
         for (int i=0; i<Params.nbrParents; i+=2) {
             Solution[] children = parents.get(i).crossoverGreedyInsertion(parents.get(i+1));
@@ -54,14 +54,58 @@ public class GenAlg {
         }
         return offspring;
     }
+    /**
+     * Mutate list of solutions in-place, also returns the list
+     * @param offspring
+     * @return
+     */
+    private List<Solution> mutate(List<Solution> offspring) {
+        for (Solution solution : offspring) {
+            if (this.rand.nextDouble() < Params.mutationRate) {
+                solution.mutate();
+            }
+        }
+        return offspring;
+    }
+    
+    private void updateFitness(List<Solution> solutions) {
+        for (Solution s : solutions) {
+            if (s.getFitnessChanged()) {
+                s.computeUnfeasibleUtility();
+            }
+        }
+    }
+    
+    /**
+     * Select survivors from population and offspring.
+     * Implement elitism here.
+     * @param offspring
+     * @return
+     */
+    private List<Solution> survivorSelection(List<Solution> offspring) {
+        List<Solution> oldGeneration = new ArrayList<Solution>(this.population);
+        Collections.sort(oldGeneration, Comparator.comparingDouble(Solution::getFitness));
+        List<Solution> survivors = new ArrayList<Solution>();
+        updateFitness(offspring);
+        // Se
+        
+        return survivors;
+    }
     
     public void run() {
         // Prep
-        
+        generatePop();
         // Loop
         while (generation < Params.maxGenerations) {
-            ArrayList<Solution> parents = parentSelection();
-            ArrayList<Solution> offspring = crossover(parents);
+            updateFitness(this.population);
+            List<Solution> parents = parentSelection();
+            List<Solution> offspring = crossover(parents);
+            // Mutate all survivors, not just offspring.
+            
+            List<Solution> newPopulation = survivorSelection(offspring);
+            
+            offspring = mutate(newPopulation);
+            
             
             this.generation++;
         }

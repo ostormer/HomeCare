@@ -45,7 +45,7 @@ public class SolutionVerifier {
             if(i%100 == 0) {
                 greedySolution.updateDisplay(comp);
                 TimeUnit.SECONDS.sleep(1);
-                //greedySolution.mutateSplitOneNursePlan();
+                greedySolution.mutateSplitOneNursePlan();
                 greedySolution.updateDisplay(comp);
                 TimeUnit.SECONDS.sleep(1);
             }

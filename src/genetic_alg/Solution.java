@@ -18,6 +18,7 @@ public class Solution {
     private List<Integer> activeNurses;
     private Random rand;
     private double fitness;
+    private boolean fitnessChanged;
 
     private static ArrayList<Double> mutationWeights = computeMutationWeights();
     final static double DELAY_FACTOR = 100.;
@@ -31,6 +32,7 @@ public class Solution {
         for (int i = 0; i < this.problem.getNbrNurses(); i++) {
             this.nursePlans.add(new ArrayList<Patient>());
         }
+        fitnessChanged = true;
     }
     
     private static ArrayList<Double> computeMutationWeights(){
@@ -69,6 +71,8 @@ public class Solution {
         }
         this.activeNurses = IntStream.rangeClosed(0, this.problem.getNbrNurses()-1)
                 .boxed().collect(Collectors.toList());
+        this.computeUnfeasibleUtility();
+        this.fitnessChanged = false;
     }
     
     public void generateRandomSorted() {
@@ -79,6 +83,8 @@ public class Solution {
         for (int i = 0; i < this.problem.getNbrNurses(); i++) {
             Collections.sort(this.nursePlans.get(i), Patient.COMPARE_BY_LATEST_CARE_START);
         }
+        this.computeUnfeasibleUtility();
+        this.fitnessChanged = false;
     }
     
     public void generateRandomGreedy(int nbrActiveNurses) {
@@ -106,13 +112,15 @@ public class Solution {
             Patient assignPatient = unassignedPatients.remove(0);
             this.insertInBestRoute(assignPatient);
         }
+        this.computeUnfeasibleUtility();
+        this.fitnessChanged = false;
     }
     /**
      * Insert patient into route where it increases travel time the least.
      * Does not take possible care time window into account
      * @param patient: Patient to insert. Assumes patient is not in any route
      */
-    public void insertInBestRoute(Patient patient) {
+    private void insertInBestRoute(Patient patient) {
         double minIncrease = Double.MAX_VALUE;
         int nurseIndexInsert = -1;
         int stopIndexInsert = -1;
@@ -181,8 +189,8 @@ public class Solution {
         int otherNurseIndex = other.activeNurses.get(rand.nextInt(other.activeNurses.size()));
         List<Patient> otherPatients = new ArrayList<Patient>(other.nursePlans.get(otherNurseIndex));
         // Remove patients in selfPatients from other's nursePlans
-        Solution otherChild = other.copy();
         Solution thisChild = this.copy();
+        Solution otherChild = other.copy();
         thisPatientsLoop:
         for (Patient patientToRemove : selfPatients) {
             for (List<Patient> nursePlan : otherChild.nursePlans ) {
@@ -215,6 +223,10 @@ public class Solution {
         for (Patient removedPatient : otherPatients) {
             thisChild.insertInBestRoute(removedPatient);
         }
+        // Mark that they need their fitness computed again.
+        // Do not do it yet, as they may still mutate before fitness is needed
+        thisChild.fitnessChanged = true;
+        otherChild.fitnessChanged = true;
         // Add to offspring:
         offspring[0] = thisChild;
         offspring[1] = otherChild;
@@ -236,6 +248,7 @@ public class Solution {
             }
         }
         System.out.println("Did not find patient to improve in solution. Something is wrong.");
+        this.fitnessChanged = true;
     }
     
     public void mutateSwapOnePatient() { // Dumb mutation
@@ -254,10 +267,11 @@ public class Solution {
         if (! this.activeNurses.contains(to)) {
             this.activeNurses.add(to);
         }
+        this.fitnessChanged = true;
     }
     
     public void mutateSplitOneNursePlan() {
-        // TODO: Implement mutation splitting one nursePlan into two shorter ones
+        // Mutation splitting one nursePlan into two shorter ones
         // Find random plan that is at least length 2
         int nurseIndex = this.rand.nextInt(this.activeNurses.size());
         while (this.nursePlans.get(nurseIndex).size() < 2) {
@@ -275,11 +289,14 @@ public class Solution {
         }
         int targetIndex = emptyPlans.get(this.rand.nextInt(emptyPlans.size()));
         int splitIndex = this.rand.nextInt(this.nursePlans.get(nurseIndex).size() - 1) + 1;
-        this.nursePlans.set(targetIndex, nursePlans.get(nurseIndex).subList(0, splitIndex));
-        this.nursePlans.set(nurseIndex, nursePlans.get(nurseIndex).subList(splitIndex, nursePlans.get(nurseIndex).size()));
-        /*if (! this.activeNurses.contains(targetIndex)) {
+        // split-index first patients are removed and added to target
+        for (int i=0; i<splitIndex; i++) {
+            this.nursePlans.get(targetIndex).add(this.nursePlans.get(nurseIndex).remove(0));
+        }
+        if (! this.activeNurses.contains(targetIndex)) {
             this.activeNurses.add(targetIndex);
-        }*/
+        }
+        this.fitnessChanged = true;
     }
     
     public void mutate() {
@@ -442,7 +459,8 @@ public class Solution {
         // Return copy of this, but with new lists containing pointers to the same patient objects
         // Could call it a semi-shallow copy.
         Solution child = new Solution(this.problem);
-        
+        child.fitness = this.fitness;
+        child.fitnessChanged = this.fitnessChanged;
         child.activeNurses = new LinkedList<Integer>(this.activeNurses);
         child.nursePlans = new ArrayList<List<Patient>>();
         for (int i=0; i<this.nursePlans.size(); i++) {
@@ -451,6 +469,9 @@ public class Solution {
         return child;
     }
     
+    public boolean getFitnessChanged() {
+        return fitnessChanged;
+    }
     public double getFitness() {
         return fitness;
     }
