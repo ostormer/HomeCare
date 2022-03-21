@@ -35,7 +35,7 @@ public class SolutionVerifier {
         */
 	    
         Solution greedySolution = new Solution(problem);
-        greedySolution.generateRandomGreedy(10);
+        greedySolution.generateRandomGreedy(problem.getNbrNurses());
         System.out.println(greedySolution.toStringRepresentation());
         System.out.println(greedySolution.computeUnfeasibleUtility());
         RouteDisplayComponent comp = greedySolution.displaySolution();
