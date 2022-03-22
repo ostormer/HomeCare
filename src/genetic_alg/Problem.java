@@ -39,7 +39,7 @@ public class Problem {
 		    this.nbrNurses = nbrNursesRead.intValue();
 		    Double capacityNurseRead = (Double) map.get("capacity_nurse");
 		    this.capacityNurse = capacityNurseRead.intValue();
-		    this.benchmark = (double) map.get("benchmark");
+//		    this.benchmark = (double) map.get("benchmark");
 		    // Read depot data
 		    Map<String, Double> depotMap = (Map<String, Double>) map.get("depot");
 		    Double xCoordDepot = (Double) depotMap.get("x_coord");
