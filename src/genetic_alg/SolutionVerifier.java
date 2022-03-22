@@ -5,11 +5,11 @@ public class SolutionVerifier {
 
 	public static void main(String[] args) throws InterruptedException {
 
-	    Problem problem = new Problem("src\\train\\train_9.json");
+	    Problem problem = new Problem(Params.problemPath);
 	    
 	    GenAlg solver = new GenAlg(problem);
-	    solver.run();
-
+	    Solution winner = solver.runGATournament();
+	    winner.saveToFile("out\\winner.json");
 	}
 
 }

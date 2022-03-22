@@ -1,5 +1,7 @@
 # Project specific for eclipse
 .settings/
+out/
+*.zip
 
 # Compiled class file
 *.class

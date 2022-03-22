@@ -9,7 +9,6 @@ import java.util.Random;
 public class GenAlg {
     private int generation = 0;
     private Problem problem;
-    private List<Solution> population;
     private Random rand;
     
     public GenAlg(Problem problem) {
@@ -36,7 +35,7 @@ public class GenAlg {
         return pop;
     }
     
-    private List<Solution> parentSelection() {
+    private List<Solution> parentSelection(List<Solution> population) {
         List<Solution> parents = new ArrayList<Solution>();
         while (parents.size() < Params.nbrParents) {
             Tournament t = new Tournament(population);
@@ -84,10 +83,10 @@ public class GenAlg {
      * @param offspring
      * @return survivors
      */
-    private List<Solution> mutateAndSelectSurvivors(List<Solution> offspring) {
+    private List<Solution> mutateAndSelectSurvivors(List<Solution> offspring, List<Solution> population) {
         List<Solution> survivors = new ArrayList<Solution>();
         
-        List<Solution> oldGeneration = new ArrayList<Solution>(this.population); // Copy of old pop (copy may be unnecessary)
+        List<Solution> oldGeneration = new ArrayList<Solution>(population); // Copy of old pop (copy may be unnecessary)
         // Old pop is already sorted
         List<Solution> elite = new ArrayList<Solution>(oldGeneration.subList(0, Params.eliteSize));
         survivors.addAll(elite);
@@ -127,21 +126,71 @@ public class GenAlg {
         return survivors;
     }
     
-    public void run() {
-        // Prep
-        this.population = generatePop(Params.popSize);
-        Solution bestSolution = this.population.get(0);
-        int lastImprovedGen = -1;
+    
+    public Solution runGATournament() {
+        int round = 0;
+        List<List<Solution>> populations = new ArrayList<List<Solution>>();
+        // Generate first populations
+        for (int i=0; i<Math.pow(2, Params.GATournamentLayers); i++) {
+            populations.add(generatePop(Params.popSize));
+        }
+        int matchNumber = 0;
+        while (round < Params.GATournamentLayers) {
+            
+            List<List<Solution>> nextRoundPopulations = new ArrayList<List<Solution>>();
+            int roundGenSize = (int) (Params.firstRoundGenerations * Math.pow(2, round));
+            while (populations.size() > 0) {
+                List<Solution> p1 = populations.remove(0);
+                List<Solution> p2 = populations.remove(0);
+                p1 = runGenerationsOnPop(roundGenSize, p1, matchNumber);
+                p2 = runGenerationsOnPop(roundGenSize, p2, matchNumber+1);
+                matchNumber += 2;
+                List<Solution> best = new ArrayList<>();
+                best.addAll(p1.subList(0, Params.popSize / 2));
+                best.addAll(p2.subList(0, Params.popSize - best.size()));
+                nextRoundPopulations.add(best);
+            }
+            populations = nextRoundPopulations;
+            round++;
+        }
+        System.out.println(populations.size());
+        List<Solution> finalPop = populations.get(0);
+        finalPop = runGenerationsOnPop((int) (Params.firstRoundGenerations * Math.pow(2, round)), finalPop, matchNumber);
+        Solution winner = getBestFeasibleSolution(finalPop);
+        winner.displaySolution();
+        return winner;
+    }
+    
+    private Solution getBestFeasibleSolution(List<Solution> pop) {
+        // Assumes pop is sorted
+        for (Solution s : pop) {
+            if (s.isFeasible()) {
+                return s;
+            }
+        }
+        return null;
+    }
+    
+    public List<Solution> runGenerationsOnPop(int generations, List<Solution> population, int runId) {
+        population.sort(Comparator.comparingDouble(Solution::getFitness));
+        Solution bestSolution = population.get(0);
         double bestFitness = bestSolution.getFitness();
+        Solution bestFeasibleSolution = null;
+        double bestFeasibleFitness = Double.MAX_VALUE;
+        int lastImprovedGen = -1;
+        int lastFreshInjection = 0;
+        this.generation = 0;
         
-        RouteDisplayComponent comp = bestSolution.displaySolution();
+        
         // Loop
-        while (generation < Params.maxGenerations) {
-            updateFitness(this.population);
-            List<Solution> parents = parentSelection();
+        while (generation < generations) {
+            updateFitness(population);
+            List<Solution> parents = parentSelection(population);
             List<Solution> offspring = crossover(parents);
             // Mutate all survivors, not just offspring.
-            this.population = mutateAndSelectSurvivors(offspring);
+            population = mutateAndSelectSurvivors(offspring, population);
+            // Simple genetic alg complete, rest is checking results or extra stuff
+            
             bestSolution = population.get(0);
             if (bestFitness - bestSolution.getFitness() > 1e-6) {
                 // New best is better
@@ -150,33 +199,51 @@ public class GenAlg {
             }
             
             // Check if converging, add freshly generated bad solutions to diversify pop
-            if (generation - lastImprovedGen > 1000) {
-                List<Solution> freshPopulation = this.population.subList(0, Params.popSize / 2);
+            if (generation - lastImprovedGen > 1000 && generation - lastFreshInjection > 1000) {
+                List<Solution> freshPopulation = population.subList(0, Params.popSize / 2);
                 List<Solution> generatedPopulation = generatePop(Params.popSize - Params.popSize / 2);
                 freshPopulation.addAll(generatedPopulation);
                 updateFitness(freshPopulation);
                 freshPopulation.sort(Comparator.comparingDouble(Solution::getFitness));
-                this.population = freshPopulation;
-                lastImprovedGen = generation;
-                System.out.println("Generating new random and greedy solutions to diversify population");
+                population = freshPopulation;
+                lastFreshInjection = generation;
+            }
+            if (generation - lastImprovedGen > 10000) {
+                break;
             }
             
             if (generation % 100 == 0) {
-                System.out.println(String.format("Generation %d\tBest fitness: %.2f\t", generation, bestSolution.getFitness()));
+                population.sort(Comparator.comparingDouble(Solution::getFitness));
+                for (Solution s : population) {
+                    if(s.isFeasible()) {
+                        if (bestFeasibleFitness - s.computeFeasibleFitness() > 1e-6) {
+                            bestFeasibleFitness = s.computeFeasibleFitness();
+                            bestFeasibleSolution = s;
+                        }
+                        break;
+                    }
+                }
             }
             if (generation % 1000 == 0) {
-                bestSolution.updateDisplay(comp);
-//                try {
-//                    TimeUnit.SECONDS.sleep(1);
-//                } catch (InterruptedException e) {
-//                    // TODO Auto-generated catch block
-//                    e.printStackTrace();
-//                }
+                System.out.println(String.format("Generation %d  \t Best fitness: %.2f \t Best feasible fitness: %.2f",
+                        generation, bestSolution.getFitness(), bestFeasibleFitness));
             }
             this.generation++;
-            
+        } // End loop
+        updateFitness(population);
+        population.sort(Comparator.comparingDouble(Solution::getFitness));
+        // One last check for best feasible solution
+        for (Solution s : population) {
+            if(s.isFeasible()) {
+                if (bestFeasibleFitness - s.computeFeasibleFitness() > 1e-6) {
+                    bestFeasibleFitness = s.computeFeasibleFitness();
+                    bestFeasibleSolution = s;
+                }
+                break;
+            }
         }
         System.out.println("GenAlg complete");
-        
+        bestFeasibleSolution.saveToFile(String.format("out\\best%03d.json", runId));
+        return population;
     }
 }

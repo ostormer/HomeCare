@@ -1,21 +1,23 @@
 package genetic_alg;
 
 import java.awt.Dimension;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import javax.swing.JFrame;
 
 public class Solution {
     private Problem problem;
     private List<List<Patient>> nursePlans;
-    private List<Integer> activeNurses;
     private Random rand;
     private double fitness;
     private boolean fitnessChanged;
@@ -68,8 +70,6 @@ public class Solution {
             // Assign patient to random Nurse completely at random
             this.nursePlans.get(rand.nextInt(this.nursePlans.size())).add(patient);
         }
-        this.activeNurses = IntStream.rangeClosed(0, this.problem.getNbrNurses()-1)
-                .boxed().collect(Collectors.toList());
         this.computeUnfeasibleFitness();
         this.fitnessChanged = false;
     }
@@ -92,11 +92,11 @@ public class Solution {
             range.add(i);
         }
         Collections.shuffle(range);
-        this.activeNurses = new ArrayList<Integer>(range.subList(0, nbrActiveNurses));
+        List<Integer> activeNurses = new ArrayList<Integer>(range.subList(0, nbrActiveNurses));
         
         List<Patient> unassignedPatients = new LinkedList<Patient>(Arrays.asList(this.problem.getPatients()));
         // Assign a random patient to each nurse
-        for (Integer nurseIndex : this.activeNurses) {
+        for (Integer nurseIndex : activeNurses) {
             // Select random patient from unassigned patient list.
             int assignPatientIndex = rand.nextInt(unassignedPatients.size() - 1);
             // Remove it from list of unassigned patients and assign it to a nurse.
@@ -122,7 +122,7 @@ public class Solution {
         int nurseIndexInsert = -1;
         int stopIndexInsert = -1;
         // Search for smallest increase
-        for (int nurseIndex : this.activeNurses) {
+        for (int nurseIndex=0; nurseIndex<problem.getNbrNurses(); nurseIndex++) {
             // For each nurse's plan
             // If plan empty
             if (nursePlans.get(nurseIndex).size() == 0) {
@@ -181,10 +181,18 @@ public class Solution {
         // Crossover as described at end of Visma lecture notes
         Solution[] offspring = new Solution[2];
         
-        int selfNurseIndex = this.activeNurses.get(rand.nextInt(this.activeNurses.size()));
+        int selfNurseIndex = rand.nextInt(this.problem.getNbrNurses());
+        while(this.nursePlans.get(selfNurseIndex).size() == 0) {
+            selfNurseIndex = rand.nextInt(this.problem.getNbrNurses());
+        }
         List<Patient> selfPatients = new ArrayList<Patient>(this.nursePlans.get(selfNurseIndex));
-        int otherNurseIndex = other.activeNurses.get(rand.nextInt(other.activeNurses.size()));
+        
+        int otherNurseIndex = rand.nextInt(this.problem.getNbrNurses());
+        while(other.nursePlans.get(otherNurseIndex).size() == 0) {
+            otherNurseIndex = rand.nextInt(this.problem.getNbrNurses());
+        }
         List<Patient> otherPatients = new ArrayList<Patient>(other.nursePlans.get(otherNurseIndex));
+        
         // Remove patients in selfPatients from other's nursePlans
         Solution thisChild = this.copy();
         Solution otherChild = other.copy();
@@ -258,21 +266,16 @@ public class Solution {
         int patientToIndex = rand.nextInt(this.nursePlans.get(to).size()+1);
         Patient movePatient = this.nursePlans.get(from).remove(patientFromIndex);
         this.nursePlans.get(to).add(patientToIndex, movePatient);
-        if (this.nursePlans.get(from).size() == 0) {
-            this.activeNurses.remove(Integer.valueOf(from)); // Removes occurence of from, not index from
-        }
-        if (! this.activeNurses.contains(to)) {
-            this.activeNurses.add(to);
-        }
+        
         this.fitnessChanged = true;
     }
     
     public void mutateSplitOneNursePlan() {
         // Mutation splitting one nursePlan into two shorter ones
         // Find random plan that is at least length 2
-        int nurseIndex = this.rand.nextInt(this.activeNurses.size());
+        int nurseIndex = this.rand.nextInt(this.problem.getNbrNurses());
         while (this.nursePlans.get(nurseIndex).size() < 2) {
-            nurseIndex = this.rand.nextInt(this.activeNurses.size());
+            nurseIndex = this.rand.nextInt(this.problem.getNbrNurses());
         }
         LinkedList<Integer> emptyPlans = new LinkedList<Integer>();
         for (int i=0; i<problem.getNbrNurses(); i++) {
@@ -290,17 +293,19 @@ public class Solution {
         for (int i=0; i<splitIndex; i++) {
             this.nursePlans.get(targetIndex).add(this.nursePlans.get(nurseIndex).remove(0));
         }
-        if (! this.activeNurses.contains(targetIndex)) {
-            this.activeNurses.add(targetIndex);
-        }
         this.fitnessChanged = true;
     }
     
     public void mutateSortOneNursePlan() {
         // Find one random nursePlan larger than 2
-        int nurseIndex = this.rand.nextInt(this.activeNurses.size());
+        int nurseIndex = this.rand.nextInt(this.problem.getNbrNurses());
+        int tries = 0;
         while (this.nursePlans.get(nurseIndex).size() < 2) {
-            nurseIndex = this.rand.nextInt(this.activeNurses.size());
+            nurseIndex = this.rand.nextInt(this.problem.getNbrNurses());
+            if (tries > 20) {
+                return;
+            }
+            tries++;
         }
         List<Patient> sortPlan = this.nursePlans.get(nurseIndex);
         Collections.sort(sortPlan, Patient.COMPARE_BY_LATEST_CARE_START);
@@ -356,7 +361,7 @@ public class Solution {
     
     public boolean isFeasible() {
         for (List<Patient> nursePlan : this.nursePlans) {
-            int currentTime = 0;
+            double currentTime = 0;
             int currentLocation = 0; // Start at depot
             int usedCapacity = 0;
             // Iterate through all patients on current nurse's plan
@@ -395,7 +400,7 @@ public class Solution {
         double travelTimeTotal = 0;
         // Iterate through all nurses
         for (List<Patient> nursePlan : this.nursePlans) {
-            int currentTime = 0;
+            double currentTime = 0;
             int currentLocation = 0; // Start at depot
             // Iterate through all patients on current nurse's plan
             for (Patient patient : nursePlan) {
@@ -424,7 +429,7 @@ public class Solution {
         int overCapacityTotal = 0;
         // Iterate through all nurses
         for (List<Patient> nursePlan : this.nursePlans) {
-            int currentTime = 0;
+            double currentTime = 0;
             int currentLocation = 0; // Start at depot
             int usedCapacity = 0;
             // Iterate through all patients on current nurse's plan
@@ -460,7 +465,18 @@ public class Solution {
         this.fitness = travelTimeTotal
                 + ((double) delayTotal * Params.delayPunishmentFactor)
                 + ((double) overCapacityTotal * Params.overCapacityPunishmentFactor);
+        this.fitnessChanged = false;
         return this.fitness;
+    }
+    
+    public void saveToFile(String pathName) {
+        String solutionText = this.toStringRepresentation();
+        Path path = Paths.get(pathName);
+        try {
+            Files.writeString(path, solutionText, StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
     
     public Solution copy() {
@@ -469,7 +485,6 @@ public class Solution {
         Solution child = new Solution(this.problem);
         child.fitness = this.fitness;
         child.fitnessChanged = this.fitnessChanged;
-        child.activeNurses = new LinkedList<Integer>(this.activeNurses);
         child.nursePlans = new ArrayList<List<Patient>>();
         for (int i=0; i<this.nursePlans.size(); i++) {
             child.nursePlans.add(new ArrayList<Patient>(this.nursePlans.get(i)));
@@ -485,9 +500,6 @@ public class Solution {
     }
     public List<List<Patient>> getNursePlans() {
         return nursePlans;
-    }
-    public List<Integer> getActiveNurses() {
-        return activeNurses;
     }
     
 }
