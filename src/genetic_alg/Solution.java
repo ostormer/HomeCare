@@ -92,12 +92,10 @@ public class Solution {
             range.add(i);
         }
         Collections.shuffle(range);
-        this.activeNurses = range.subList(0, nbrActiveNurses);
+        this.activeNurses = new ArrayList<Integer>(range.subList(0, nbrActiveNurses));
         
-        // test clustering to find distinct start points
         List<Patient> unassignedPatients = new LinkedList<Patient>(Arrays.asList(this.problem.getPatients()));
         // Assign a random patient to each nurse
-        // TODO: Try clustering for better initial patient spread
         for (Integer nurseIndex : this.activeNurses) {
             // Select random patient from unassigned patient list.
             int assignPatientIndex = rand.nextInt(unassignedPatients.size() - 1);
@@ -310,7 +308,7 @@ public class Solution {
         this.fitnessChanged = true;
     }
     
-    public void mutate() {
+    public void applyRandomMutation() {
         double mutationNumber = this.rand.nextDouble() * Solution.mutationWeights.get(Solution.mutationWeights.size()-1);
         int mutationId = -1;
         for (int i=0; i<Solution.mutationWeights.size(); i++) {
@@ -333,7 +331,7 @@ public class Solution {
             this.mutateSortOneNursePlan();
             break;
         }
-        
+
     }
     
     public String toStringRepresentation() {

@@ -9,7 +9,7 @@ import java.util.Random;
 public class GenAlg {
     private int generation = 0;
     private Problem problem;
-    private List<Solution> population; // TODO: divide into feasible and infeasible pops
+    private List<Solution> population;
     private Random rand;
     
     public GenAlg(Problem problem) {
@@ -27,16 +27,16 @@ public class GenAlg {
             } else if (i % 3 == 1) {
                 s.generateRandomUnfeasible();
             } else {
-                s.generateRandomGreedy(rand.nextInt(problem.getNbrNurses()-1) + 2); // Between 2 and nbrNurses active nurses
+                s.generateRandomGreedy(rand.nextInt(problem.getNbrNurses()-2) + 2); // Between 2 and nbrNurses active nurses
             }
             pop.add(s);
         }
+        updateFitness(pop);
         pop.sort(Comparator.comparingDouble(Solution::getFitness));
         return pop;
     }
     
     private List<Solution> parentSelection() {
-        // TODO: Implement elitism
         List<Solution> parents = new ArrayList<Solution>();
         while (parents.size() < Params.nbrParents) {
             Tournament t = new Tournament(population);
@@ -60,10 +60,11 @@ public class GenAlg {
      * @param offspring
      * @return
      */
+
     private List<Solution> mutate(List<Solution> solutions) {
         for (Solution solution : solutions) {
             if (this.rand.nextDouble() < Params.mutationRate) {
-                solution.mutate();
+                solution.applyRandomMutation();
             }
         }
         return solutions;
@@ -98,11 +99,12 @@ public class GenAlg {
         List<Solution> notElite = new ArrayList<Solution>(oldGeneration.subList(Params.eliteSize, oldGeneration.size()));
         mutate(notElite);
         updateFitness(notElite);
+        
         // Possible to mutate elite and add copy
         for (Solution s : elite) {
             if (this.rand.nextDouble() < Params.mutationRate) {
                 Solution mutatedCopy = s.copy();
-                mutatedCopy.mutate();
+                mutatedCopy.applyRandomMutation();
                 mutatedCopy.computeUnfeasibleFitness();
                 notElite.add(mutatedCopy);
             }
@@ -140,7 +142,6 @@ public class GenAlg {
             List<Solution> offspring = crossover(parents);
             // Mutate all survivors, not just offspring.
             this.population = mutateAndSelectSurvivors(offspring);
-            
             bestSolution = population.get(0);
             if (bestFitness - bestSolution.getFitness() > 1e-6) {
                 // New best is better
@@ -150,8 +151,11 @@ public class GenAlg {
             
             // Check if converging, add freshly generated bad solutions to diversify pop
             if (generation - lastImprovedGen > 1000) {
-                List<Solution> freshPopulation = new ArrayList<Solution>(this.population.subList(0, Params.popSize / 2));
-                freshPopulation.addAll(generatePop(Params.popSize - Params.popSize / 2));
+                List<Solution> freshPopulation = this.population.subList(0, Params.popSize / 2);
+                List<Solution> generatedPopulation = generatePop(Params.popSize - Params.popSize / 2);
+                freshPopulation.addAll(generatedPopulation);
+                updateFitness(freshPopulation);
+                freshPopulation.sort(Comparator.comparingDouble(Solution::getFitness));
                 this.population = freshPopulation;
                 lastImprovedGen = generation;
                 System.out.println("Generating new random and greedy solutions to diversify population");
@@ -172,6 +176,7 @@ public class GenAlg {
             this.generation++;
             
         }
+        System.out.println("GenAlg complete");
         
     }
 }
